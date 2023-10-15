@@ -218,6 +218,7 @@ class AdaINGen(nn.Module):
         return content
 
     def decode(self, content, ID):
+        # ID: feature vector
         # decode style codes to an image
         ID1 = ID[:,:2048]
         ID2 = ID[:,2048:4096]
@@ -227,7 +228,7 @@ class AdaINGen(nn.Module):
         adain_params_b = torch.cat( (self.mlp_b1(ID1), self.mlp_b2(ID2), self.mlp_b3(ID3), self.mlp_b4(ID4)), 1)
         self.assign_adain_params(adain_params_w, adain_params_b, self.dec)
         images = self.dec(content)
-        return images
+        return images  
 
     def assign_adain_params(self, adain_params_w, adain_params_b, model):
         # assign the adain_params to the AdaIN layers in model

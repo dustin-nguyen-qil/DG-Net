@@ -336,12 +336,12 @@ class DGNet_Trainer(nn.Module):
         cos_dis = 1 - cos(input, target)
         return torch.mean(cos_dis[:])
 
-    def forward(self, x_a, x_b, xp_a, xp_b):
-        s_a = self.gen_a.encode(self.single(x_a))
-        s_b = self.gen_b.encode(self.single(x_b))
-        f_a, p_a = self.id_a(scale2(x_a))
-        f_b, p_b = self.id_b(scale2(x_b))
-        x_ba = self.gen_a.decode(s_b, f_a)
+    def forward(self, x_a, x_b, xp_a, xp_b): # input: source image a, target image b, 
+        s_a = self.gen_a.encode(self.single(x_a)) # structure of image a
+        s_b = self.gen_b.encode(self.single(x_b)) # structure of image b
+        f_a, p_a = self.id_a(scale2(x_a)) # feature vector and class probability of image a
+        f_b, p_b = self.id_b(scale2(x_b)) # feature vector and class probability of image b
+        x_ba = self.gen_a.decode(s_b, f_a) 
         x_ab = self.gen_b.decode(s_a, f_b)
         x_a_recon = self.gen_a.decode(s_a, f_a)
         x_b_recon = self.gen_b.decode(s_b, f_b)

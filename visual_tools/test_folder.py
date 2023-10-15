@@ -74,7 +74,10 @@ trainer.cuda()
 trainer.eval()
 encode = trainer.gen_a.encode # encode function
 style_encode = trainer.gen_a.encode # encode function
-id_encode = trainer.id_a # encode function
+id_encode = trainer.id_a # encode function # change to c2dresnet_50, may need to retrain
+# or feed a video sequence as single images, use tracklet ID to group the images after generation
+# -> get an appropriate pickle file as image-based 
+# -> make sure images from the same sequence/ID consistently take style from another sequence/ID 
 decode = trainer.gen_a.decode # decode function
 
 data_transforms = transforms.Compose([
@@ -84,8 +87,8 @@ data_transforms = transforms.Compose([
 ])
 
 image_datasets = datasets.ImageFolder(opts.input_folder, data_transforms)
-dataloader_content = torch.utils.data.DataLoader(image_datasets, batch_size=opts.batchsize, shuffle=False, pin_memory=True, num_workers=1)
-dataloader_structure = torch.utils.data.DataLoader(image_datasets, batch_size=opts.batchsize, shuffle=True, pin_memory=True, num_workers=1)
+dataloader_content = torch.utils.data.DataLoader(image_datasets, batch_size=opts.batchsize, shuffle=False, pin_memory=True, num_workers=1) # return img, label
+dataloader_structure = torch.utils.data.DataLoader(image_datasets, batch_size=opts.batchsize, shuffle=True, pin_memory=True, num_workers=1) # return img, label
 image_paths = image_datasets.imgs
 
 ######################################################################
@@ -127,13 +130,13 @@ with torch.no_grad():
                 bg_img = gray(bg_img)
             bg_img = Variable(bg_img.cuda())
 
-            n, c, h, w = id_img.size()
+            n, c, h, w = id_img.size() # n: batch_size
             # Start testing
-            c = encode(bg_img)
-            f, _ = id_encode(id_img)
+            c = encode(bg_img) # content encoding using resnet50 backbone
+            f, _ = id_encode(id_img) # feature from resnet50
 
             if opts.trainer == 'DGNet':
-                outputs = decode(c, f)
+                outputs = decode(c, f) # structure from c, clothing style from f
                 im = recover(outputs[0].data.cpu())
                 im = Image.fromarray(im.astype('uint8'))
                 ID = name.split('_')

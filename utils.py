@@ -2,7 +2,8 @@
 Copyright (C) 2019 NVIDIA Corporation.  All rights reserved.
 Licensed under the CC BY-NC-SA 4.0 license (https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode).
 """
-
+import pickle, random
+from PIL import Image
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
@@ -17,6 +18,8 @@ import yaml
 import numpy as np
 import torch.nn.init as init
 import time
+from itertools import groupby
+from operator import itemgetter
 # Methods
 # get_all_data_loaders      : primary data loader interface (load trainA, testA, trainB, testB)
 # get_data_loader_list      : list-based data loader
@@ -35,6 +38,32 @@ import time
 # vgg_preprocess
 # get_scheduler
 # weights_init
+
+def get_target_images(data_path, source_pid):
+    with open(data_path, 'rb') as f:
+        data = pickle.load(f)
+    target_data = data['data']
+    max_num_clothes = target_data['max_num_clothes']
+    needed = 10 - max_num_clothes[source_pid]
+    filtered_target_data = [tracklet for tracklet in target_data if tracklet['p_id'] != source_pid]
+    filtered_target_data.sort(key=itemgetter('p_id'))
+    grouped = {key: list(group) for key, group in groupby(filtered_target_data, key=itemgetter("p_id"))}
+    grouped_list = [group for group in grouped.values()]
+    target_tracklets = random.sample(grouped_list, k=needed)
+    target_images = [random.choice(tracklet['img_paths']) for tracklet in target_tracklets]   
+    # transform, then turn images into dataloader 
+    # get tracklet_path, p_id and store as file name to second-check 
+    return target_images 
+
+def get_target_loader(target_images, transform):
+    imgs = []
+    for img_path in target_images:
+        img = Image.open(img_path)
+        img = transform(img)
+        img.unsqueeze(0)
+        imgs.append(img)
+    return torch.cat(imgs, 0)
+
 
 def get_all_data_loaders(conf):
     batch_size = conf['batch_size']
